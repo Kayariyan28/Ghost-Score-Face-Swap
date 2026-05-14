@@ -1,0 +1,53 @@
+# ─── Python runtime ────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.env
+.env.local
+
+# ─── macOS ─────────────────────────────────────────────────────────
+.DS_Store
+._*
+
+# ─── Downloaded model weights (huge; downloaded by setup.sh) ───────
+models/
+*.onnx
+*.pth
+*.h5
+*.tar
+*.jit
+*.bin
+*.safetensors
+
+# ─── Per-swap outputs (regenerable) ────────────────────────────────
+outputs/
+
+# ─── External baselines (cloned upstream repos + checkpoints) ──────
+baselines/SimSwap/
+baselines/simswap_models/
+baselines/**/.huggingface/
+
+# ─── Research paper, drafts, and supporting data (kept LOCAL only) ─
+# The entire paper/ directory is excluded — manuscript, figures,
+# benchmark CSV / JSON outputs, and LaTeX build artefacts all stay
+# off the public repo.
+paper/
+
+# ─── Temporary files ───────────────────────────────────────────────
+*.tmp
+*.swp
+.~lock.*
+/tmp_*
+
+# ─── IDE / editor noise ────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ─── Claude Code working state ─────────────────────────────────────
+.claude/

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Face Swap — Local</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Face Swap</h1>
+      <p class="subtitle">
+        Photoshop-style face patching, running 100% locally.
+        Powered by <strong>InsightFace</strong> (inswapper_128) + <strong>GFPGAN</strong>.
+      </p>
+    </header>
+
+    <section class="upload-grid">
+      <div class="upload-box">
+        <input type="file" id="sourceInput" accept="image/*" hidden />
+        <label for="sourceInput">
+          <div class="preview" id="sourcePreview">
+            <div class="placeholder">
+              <span class="icon">+</span>
+              <span class="label">Base Face</span>
+              <span class="hint">The face you want to use</span>
+            </div>
+          </div>
+          <span class="caption">Base face image</span>
+        </label>
+      </div>
+
+      <div class="upload-box">
+        <input type="file" id="targetInput" accept="image/*" hidden />
+        <label for="targetInput">
+          <div class="preview" id="targetPreview">
+            <div class="placeholder">
+              <span class="icon">+</span>
+              <span class="label">Target Body</span>
+              <span class="hint">Where the face will be patched</span>
+            </div>
+          </div>
+          <span class="caption">Target body image</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="options">
+      <div class="mode-pick">
+        <div class="mode-head"><strong>Swap mode</strong></div>
+        <div class="seg seg-3" role="radiogroup">
+          <label class="seg-opt">
+            <input type="radio" name="mode" value="photoshop" checked />
+            <span>
+              <strong>Photoshop transplant</strong>
+              <em>
+                The FaceFusion HD / Roop-Unleashed HD pipeline: inswapper
+                base + 478-pt landmark affine + multi-scale Laplacian
+                frequency graft + Poisson seamless clone. GFPGAN 2× canvas.
+                Best for similar-pose pairs.
+              </em>
+            </span>
+          </label>
+          <label class="seg-opt">
+            <input type="radio" name="mode" value="pro" />
+            <span>
+              <strong>Pro (3D-aware adaptive)</strong>
+              <em>
+                Pose estimation (yaw/pitch/roll via solvePnP) drives
+                adaptive routing. Multi-pipeline auto-scoring picks the
+                ArcFace winner. TPS non-rigid warp + region-aware blending
+                (eyes / lips / skin / mouth weighted differently via
+                BiSeNet). Best for tilted, yawed, or expression-mismatched
+                targets. Slower (~30–90 s).
+              </em>
+            </span>
+          </label>
+          <label class="seg-opt">
+            <input type="radio" name="mode" value="ai" />
+            <span>
+              <strong>AI synthesis (inswapper + GFPGAN only)</strong>
+              <em>
+                Pure inswapper_128 + GFPGAN. No source-pixel graft. Fastest
+                (~5 s), maximum pose tolerance, but face detail is rebuilt
+                by GFPGAN, not copied from source.
+              </em>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <label class="opt">
+        <input type="checkbox" id="enhance" checked />
+        <span>
+          <strong>Enhance with GFPGAN</strong>
+          <em>Restores skin / eye / hair detail and smooths seams (recommended)</em>
+        </span>
+      </label>
+
+      <label class="opt">
+        <input type="checkbox" id="hd" checked />
+        <span>
+          <strong>HD output (2× canvas)</strong>
+          <em>
+            Restores face to 1024×1024 native and outputs at 2× the target's
+            canvas size. Turn off for a smaller file at original size.
+          </em>
+        </span>
+      </label>
+
+      <label class="opt">
+        <input type="checkbox" id="preserveHair" checked />
+        <span>
+          <strong>Preserve target hair / glasses / accessories</strong>
+          <em>
+            BiSeNet face parser segments the target into face / hair / glasses /
+            earrings / scarf. The swap is composited UNDER those occluders, so
+            bangs, side-swept hair, eyeglasses and headwear stay on top — no
+            overpainting at the boundary.
+          </em>
+        </span>
+      </label>
+
+      <label class="opt">
+        <input type="checkbox" id="preserveSourceTone" checked />
+        <span>
+          <strong>Preserve source skin tone &amp; shadows</strong>
+          <em>
+            On by default — keeps the base image's exact skin tone, shading,
+            and cast shadows. Turn off only if you want the warped source
+            LAB-color-matched to a very different target lighting.
+          </em>
+        </span>
+      </label>
+
+      <div class="slider-opt" data-mode="photoshop">
+        <div class="slider-head">
+          <strong>Source detail strength</strong>
+          <span id="detailValue">0.90</span>
+        </div>
+        <input type="range" id="detail" min="0" max="1.5" step="0.05" value="0.9" />
+        <div class="slider-labels">
+          <span>Soft (more inswapper)</span>
+          <span>Crisp (more source pixels)</span>
+        </div>
+        <em class="hint">
+          How strongly the source image's high-frequency content (pores,
+          eyelashes, hair strands) is grafted onto the swapped face. Only
+          affects Photoshop mode.
+        </em>
+      </div>
+
+      <div class="slider-opt" data-mode="ai">
+        <div class="slider-head">
+          <strong>Identity fidelity</strong>
+          <span id="fidelityValue">0.75</span>
+        </div>
+        <input type="range" id="fidelity" min="0" max="1" step="0.05" value="0.75" />
+        <div class="slider-labels">
+          <span>Smoother (more GFPGAN)</span>
+          <span>More like source face</span>
+        </div>
+        <em class="hint">
+          inswapper transfers identity faithfully but at 128 px; GFPGAN restores
+          detail but can normalize features. This slider mixes them. Only
+          affects AI mode.
+        </em>
+      </div>
+
+      <div class="slider-opt">
+        <div class="slider-head">
+          <strong>Sharpness</strong>
+          <span id="sharpenValue">0.35</span>
+        </div>
+        <input type="range" id="sharpen" min="0" max="1.2" step="0.05" value="0.35" />
+        <div class="slider-labels">
+          <span>Off</span>
+          <span>Crisp (may over-sharpen)</span>
+        </div>
+        <em class="hint">Unsharp-mask pass applied to the final image.</em>
+      </div>
+
+      <label class="opt">
+        <input type="checkbox" id="swapAll" />
+        <span>
+          <strong>Swap every face in the target</strong>
+          <em>Off by default — only the largest face is swapped</em>
+        </span>
+      </label>
+    </section>
+
+    <button id="swapBtn" class="primary">Swap Face</button>
+
+    <div id="status" class="status"></div>
+
+    <section id="resultPanel" class="result-panel hidden">
+      <h2>Result</h2>
+      <img id="resultImg" alt="Face swap result" />
+
+      <div id="proPanel" class="pro-panel hidden">
+        <div class="metric-head">
+          <strong>Pro pipeline decision</strong>
+          <span id="proRouteBadge" class="pro-route-badge">—</span>
+        </div>
+        <div class="pose-grid">
+          <div class="pose-item">
+            <div class="metric-label">Source pose (yaw/pitch/roll)</div>
+            <div class="metric-value" id="proSrcPose">—</div>
+          </div>
+          <div class="pose-item">
+            <div class="metric-label">Target pose (yaw/pitch/roll)</div>
+            <div class="metric-value" id="proTgtPose">—</div>
+          </div>
+          <div class="pose-item">
+            <div class="metric-label">Pose difference (max axis)</div>
+            <div class="metric-value" id="proPoseDiff">—</div>
+          </div>
+        </div>
+        <div class="ghost-grid">
+          <div class="metric">
+            <div class="metric-label">Ghost score (lower = swap won)</div>
+            <div class="metric-value" id="proGhostScore">—</div>
+            <div class="metric-hint">arc(out, target) − arc(out, source)</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Arc to source</div>
+            <div class="metric-value" id="proArcSrc">—</div>
+            <div class="metric-hint">cosine</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Arc to target</div>
+            <div class="metric-value" id="proArcTgt">—</div>
+            <div class="metric-hint">cosine</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Seam gradient</div>
+            <div class="metric-value" id="proSeam">—</div>
+            <div class="metric-hint">∥∇∥ at mask edge</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Double-edge score</div>
+            <div class="metric-value" id="proDouble">—</div>
+            <div class="metric-hint">parallel-edge ratio</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Routing advice</div>
+            <div class="metric-value" id="proRoutingAdvice" style="font-size: 13px;">—</div>
+            <div class="metric-hint">auto-retry trigger</div>
+          </div>
+        </div>
+
+        <div class="pro-candidates" id="proCandidates"></div>
+      </div>
+
+      <div id="metricsPanel" class="metrics">
+        <div class="metric-head">
+          <strong>Quality verification</strong>
+          <span id="retriedBadge" class="retried-badge hidden">auto-retried</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="metric-label">ArcFace identity</div>
+            <div class="metric-value" id="m-arc">—</div>
+            <div class="metric-hint" id="m-arc-hint">cosine vs source</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">SSIM</div>
+            <div class="metric-value" id="m-ssim">—</div>
+            <div class="metric-hint">structural similarity</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">ΔE00 color</div>
+            <div class="metric-value" id="m-de">—</div>
+            <div class="metric-hint">CIEDE2000 mean</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Landmark RMSE</div>
+            <div class="metric-value" id="m-lm">—</div>
+            <div class="metric-hint">normalised face-width</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">PSNR</div>
+            <div class="metric-value" id="m-psnr">—</div>
+            <div class="metric-hint">dB</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Elapsed</div>
+            <div class="metric-value" id="m-time">—</div>
+            <div class="metric-hint">ms</div>
+          </div>
+        </div>
+      </div>
+
+      <a id="downloadBtn" class="primary download" download="face-swap.png">Download PNG</a>
+    </section>
+
+    <footer>
+      <p>Models run locally on your machine. No image leaves this computer.</p>
+    </footer>
+  </main>
+  <script src="/script.js"></script>
+</body>
+</html>
