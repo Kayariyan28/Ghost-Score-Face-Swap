@@ -55,8 +55,6 @@ The runtime is designed for **local execution only**. There is no hosted API, no
 The research write-up is published on Zenodo:
 
 - DOI: [10.5281/zenodo.20179682](https://doi.org/10.5281/zenodo.20179682)
-- Local paper PDF: [Ghost-Score-Driven Multi-Pipeline Face Swap with 3D-Aware Visible-Surface Compositing and Apple-Silicon-Native Runtime.pdf](paper/Ghost-Score-Driven%20Multi-Pipeline%20Face%20Swap%20with%203D-Aware%20Visible-Surface%20Compositing%20and%20Apple-Silicon-Native%20Runtime.pdf)
-- Main LaTeX source: [paper/main.tex](paper/main.tex)
 - Benchmark tables and figure data: [paper/figures](paper/figures)
 
 ```bibtex
