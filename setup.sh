@@ -47,6 +47,9 @@ pip install --no-build-isolation \
   "onnxruntime==1.17.1" \
   "opencv-python==4.9.0.80" \
   "scipy==1.12.0" \
+  "scikit-image==0.22.0" \
+  "mediapipe==0.10.14" \
+  "psutil==5.9.8" \
   "tqdm==4.66.2" \
   "pillow-heif==0.16.0"
 

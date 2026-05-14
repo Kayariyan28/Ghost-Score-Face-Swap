@@ -1,131 +1,247 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Ghost-Score-Driven Multi-Pipeline Face Swap — Banner" width="100%" />
+  <img src="docs/banner.png" alt="Ghost-Score-Driven Multi-Pipeline Face Swap research banner" width="100%" />
 </p>
 
 <h1 align="center">Ghost-Score-Driven Multi-Pipeline Face Swap</h1>
 
 <p align="center">
-  <em>3D-aware visible-surface compositing &middot; Apple-Silicon-native runtime</em>
+  <strong>3D-aware visible-surface compositing, ghost-score routing, and Apple-Silicon-native runtime</strong>
 </p>
 
 <p align="center">
-  <strong>Designed and developed by Karan Chandra Dey <code>[K28]</code></strong><br>
-  <sub>Founder &amp; AI Consultant &middot;
-       <a href="https://k28art.space">k28art.space</a></sub>
+  <a href="https://doi.org/10.5281/zenodo.20179682">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20179682.svg" alt="Zenodo DOI">
+  </a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg">
+  <img alt="Runtime" src="https://img.shields.io/badge/runtime-local%20only-success.svg">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%20Apple%20Silicon%20%7C%20Linux-lightgrey.svg">
+  <img alt="Status" src="https://img.shields.io/badge/status-research%20prototype-orange.svg">
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> &middot;
-  <a href="#run">Run</a> &middot;
-  <a href="#how-it-works">How it works</a> &middot;
-  <a href="#benchmark-results">Benchmark</a> &middot;
-  <a href="#api-reference">API</a> &middot;
-  <a href="#paper">Paper</a> &middot;
+  <a href="#what-this-project-does">Overview</a> ·
+  <a href="#research-paper">Paper</a> ·
+  <a href="#research-figures">Figures</a> ·
+  <a href="#installation">Installation</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#benchmark-results">Results</a> ·
   <a href="#ethics">Ethics</a>
 </p>
 
-<p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11-blue.svg">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20WSL-lightgrey.svg">
-  <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple%20Silicon-MPS%20%2B%20arm64%20ONNX-success.svg">
-  <img alt="Status" src="https://img.shields.io/badge/status-research%20demo-orange.svg">
-</p>
-
 ---
+
+## What This Project Does
+
+This repository contains a local face-swap research prototype that combines three complementary pipelines:
+
+| User mode | Internal mode | Core idea | Best use |
+|---|---:|---|---|
+| Classical Compositing | `photoshop` | InSwapper base, GFPGAN restoration, source-pixel detail graft, Poisson/Laplacian blending, and target hair/occluder re-composite | Pixel detail and source texture transfer |
+| AI Synthesis | `ai` | InSwapper + GFPGAN, without source-pixel grafting | Fast, pose-tolerant synthesis |
+| Pro Adaptive | `pro` | Multi-candidate router using `photoshop`, `ai_synthesis`, TPS overlay, and HardPoseReplaceMode | Hard pose, target-identity leakage, occlusion, and recovery cases |
+
+The central scoring primitive is the **ghost score**:
+
+```text
+g = cos(result, target) - cos(result, source)
+```
+
+Lower is better. A negative score means the output face is closer to the source identity than to the target identity. A positive score means target identity is still leaking through and the router should escalate to stronger recovery.
+
+The runtime is designed for **local execution only**. There is no hosted API, no telemetry, and no cloud inference path.
+
+## Research Paper
+
+The research write-up is published on Zenodo:
+
+- DOI: [10.5281/zenodo.20179682](https://doi.org/10.5281/zenodo.20179682)
+- Local paper PDF: [Ghost-Score-Driven Multi-Pipeline Face Swap with 3D-Aware Visible-Surface Compositing and Apple-Silicon-Native Runtime.pdf](paper/Ghost-Score-Driven%20Multi-Pipeline%20Face%20Swap%20with%203D-Aware%20Visible-Surface%20Compositing%20and%20Apple-Silicon-Native%20Runtime.pdf)
+- Main LaTeX source: [paper/main.tex](paper/main.tex)
+- Benchmark tables and figure data: [paper/figures](paper/figures)
+
+```bibtex
+@misc{dey2026ghostscore,
+  author    = {Dey, Karan Chandra},
+  title     = {Ghost-Score-Driven Multi-Pipeline Face Swap with 3D-Aware
+               Visible-Surface Compositing and Apple-Silicon-Native Runtime},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20179682},
+  url       = {https://doi.org/10.5281/zenodo.20179682}
+}
+```
+
+## Research Figures
+
+The README now surfaces the main figures, result screenshots, benchmark graphs, and algorithms from the paper in a review-friendly layout.
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/research/01_hero_triplet.png" alt="Source, target, and Pro result triplet" width="100%"><br>
+      <strong>Hero triplet.</strong> Source identity is transferred onto the target while preserving target clothing, hair, and background.
+    </td>
+    <td width="50%">
+      <img src="docs/research/02_mode_comparison.png" alt="AI, Classical, and Pro face-swap mode comparison" width="100%"><br>
+      <strong>Mode comparison.</strong> AI Synthesis, Classical Compositing, and Pro adaptive outputs on the same pair.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/research/09_benchmark_summary.png" alt="N=200 benchmark summary" width="100%"><br>
+      <strong>N=200 benchmark summary.</strong> Pro reaches the highest aggregate identity match rate.
+    </td>
+    <td width="50%">
+      <img src="docs/research/07_pose_scatter.png" alt="Identity versus pose scatter plot" width="100%"><br>
+      <strong>Pose robustness.</strong> Identity score is plotted against pose difference with pose-bucket means.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/research/10_algorithm_routing.png" alt="Ghost-score routing algorithm" width="100%"><br>
+      <strong>Algorithm 1.</strong> Ghost-score routing decision used to select recovery actions.
+    </td>
+    <td width="50%">
+      <img src="docs/research/11_algorithm_hard_pose.png" alt="HardPoseReplaceMode 14-step algorithm" width="100%"><br>
+      <strong>HardPoseReplaceMode.</strong> The 14-step recovery path for pose and ghosting failures.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/research/05_region_weights.png" alt="BiSeNet region-aware source weight map" width="100%"><br>
+      <strong>Region weights.</strong> BiSeNet-driven per-region alpha map for face parts, hair, and occluders.
+    </td>
+    <td width="50%">
+      <img src="docs/research/06_visible_surface_mask.png" alt="3DDFA_V2 z-buffer visible-surface mask" width="100%"><br>
+      <strong>Visible-surface mask.</strong> 3DDFA_V2 z-buffer mask rejects self-occluded facial surfaces.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/research/03_identity_crops.png" alt="Source, target, and result identity crops" width="100%"><br>
+      <strong>Identity crops.</strong> Tight face crops for direct visual inspection.
+    </td>
+    <td width="50%">
+      <img src="docs/research/08_threshold_sensitivity.png" alt="Routing threshold sensitivity plot" width="100%"><br>
+      <strong>Threshold sensitivity.</strong> Routing stability under threshold perturbation.
+    </td>
+  </tr>
+</table>
 
 ## Demo
 
-A 45-second screencast showing the local web app, upload flow, mode picker, and result reveal:
+The repository includes a short local UI walkthrough:
 
 <p align="center">
   <a href="docs/demo.mp4">
-    <img src="docs/demo_thumbnail.jpg" alt="Demo video thumbnail — click to play" width="80%" />
+    <img src="docs/demo_thumbnail.jpg" alt="Demo video thumbnail" width="78%" />
   </a>
   <br>
-  <em>▶ <a href="docs/demo.mp4">Watch demo.mp4</a> (45 s, 1080p, ~1.6 MB)</em>
+  <em><a href="docs/demo.mp4">Watch docs/demo.mp4</a></em>
 </p>
 
----
+## Architecture
 
-## What this is
+```mermaid
+flowchart LR
+    S[Source image] --> A[InsightFace buffalo_l]
+    T[Target image] --> A
+    A --> M[MediaPipe FaceMesh]
+    A --> P[BiSeNet parser]
+    M --> R[Mode router]
+    P --> R
+    R --> C[Classical Compositing]
+    R --> I[AI Synthesis]
+    R --> PRO[Pro Adaptive]
+    PRO --> D3[3DDFA_V2 visible-surface mask]
+    PRO --> SAM[SAM 2 occluder refinement]
+    PRO --> DEPTH[Depth Anything V2]
+    C --> G[Ghost-score detector]
+    I --> G
+    PRO --> G
+    G --> O[Result image + metrics JSON]
+    G -. retry when g > 0 or pose > 35 deg .-> R
+```
 
-A local-only face-swap web app. Upload a **source** portrait and a **target** image; the
-tool transplants the source identity onto the target while preserving the target's hair,
-clothing, occluders, and background. Everything runs **on-device**: no cloud calls, no
-telemetry, no hosted API.
+## Benchmark Results
 
-It ships **three user-visible modes**:
+The paper reports a 200-pair cross-identity benchmark using the same InsightFace `buffalo_l/w600k_r50` identity head across rows.
 
-| Mode | Pipeline | Best for | Typical wall-clock (M4 Max) |
-|---|---|---|---|
-| **AI Synthesis** | inswapper_128 + GFPGAN restore | Speed; pose-tolerant fallback | ~2.3 s |
-| **Classical Compositing** | inswapper base + 6-DOF affine warp + BiSeNet skin mask + LAB colour transfer + 5-band Laplacian pyramid + Poisson seamless clone + hair re-composite + unsharp polish | Maximum pixel-level detail (source skin grafted) | ~4.3 s |
-| **Pro (3D-aware adaptive)** | Multi-pipeline auto-best with ghost-score routing, 3DDFA_V2 z-buffer, SAM 2 occluders, Depth Anything V2, HardPoseReplaceMode | Hardest pairs (large pose, occlusion, identity-overlay failure) | ~25 s (median) |
+| Mode | Source identity α_s ↑ | Ghost score g ↓ | LPIPS-Alex ↓ | LPIPS-VGG ↓ | Match rate | Median / typical time |
+|---|---:|---:|---:|---:|---:|---:|
+| Raw InSwapper | 0.762 ± 0.198 | -0.671 ± 0.225 | 0.647 | 0.692 | 89.9% | 1.2 s |
+| AI Synthesis | 0.747 ± 0.197 | -0.637 ± 0.263 | 0.638 | 0.687 | 89.0% | 2.3 s |
+| Classical Compositing | 0.634 ± 0.185 | -0.512 ± 0.246 | **0.620** | **0.678** | 75.9% | 4.3 s |
+| Pro Adaptive | **0.784 ± 0.154** | **-0.692 ± 0.219** | 0.69 | - | **92.5%** | 25.5 s |
+| SimSwap-256 baseline | See dual-head discussion in paper | - | - | - | 0.5% under InsightFace head | 0.15 s |
 
-The system's distinguishing feature is a **ghost score** `g = α_t − α_s` (the
-ArcFace-cosine difference between result-to-target and result-to-source) computed on
-every generated image. When `g > 0` the swap has failed (the result is closer to the
-target than to the source); when `g << 0` it has succeeded. The score drives a routing
-decision tree that escalates to the more expensive Pro pipeline only when needed.
+Key paired comparisons from the paper:
 
-> 📄 A 12-page IEEE-format technical writeup with full algorithm description,
-> the routing decision tree (Algorithm 1), the 14-step HardPoseReplaceMode,
-> and the N=200 benchmark methodology is available on request from the author.
+- Pro vs Classical: Δα_s = **+0.150 ± 0.031**, Wilcoxon p = **1.2e-21**
+- Pro vs AI Synthesis: Δα_s = +0.037 ± 0.032, Wilcoxon p = 6e-3
+- Pro vs raw InSwapper: Δα_s = +0.022 ± 0.031, not significant
+- Pro on the 10 hardest Classical failures: **10/10 rescued**, mean Δα_s = **+0.732 ± 0.072**
 
----
-
-## Install
+## Installation
 
 ### Requirements
 
-| | Recommended | Minimum |
+| Requirement | Recommended | Minimum / notes |
 |---|---|---|
-| OS | macOS 14+ (Apple Silicon) | macOS 12+ / Ubuntu 22.04 / WSL2 |
-| Python | 3.11 | 3.10 (no 3.13 / 3.14 yet — ML wheels aren't ready) |
-| RAM | 32 GB unified | 16 GB |
-| Disk | 4 GB | 3 GB |
-| GPU | Apple Silicon GPU (MPS) | CPU-only OK; ~10 % slower at 1280 px input |
+| OS | macOS 14+ on Apple Silicon | Linux can run CPU/ONNX paths, but this repo is tuned on macOS |
+| Python | 3.11 | `setup.sh` accepts 3.10, 3.11, or 3.12 |
+| RAM | 32 GB unified memory | 16 GB can run smaller inputs |
+| Disk | 4-6 GB free after model downloads | More if you keep benchmark outputs |
+| GPU | Apple Silicon MPS for GFPGAN | CPU fallback works, slower on full-resolution images |
 
-For macOS install Python via Homebrew if not already present:
+Install Python on macOS if needed:
 
 ```bash
 brew install python@3.11
 ```
 
-### One-time setup
+Clone and run the one-shot setup:
 
 ```bash
 git clone https://github.com/Kayariyan28/Ghost-Score-Face-Swap.git
 cd Ghost-Score-Face-Swap
 
-# Create venv, install dependencies, download model weights
 chmod +x setup.sh
 ./setup.sh
 ```
 
-`setup.sh` runs four steps:
+`setup.sh` performs these actions:
 
-1. Creates a Python 3.11 virtual env at `venv/`.
-2. Installs all runtime dependencies (`requirements.txt`).
-3. Downloads model weights:
-   - `inswapper_128.onnx` (554 MB)
-   - `GFPGANv1.4.pth` (333 MB)
-   - InsightFace `buffalo_l` analysis pack (327 MB)
-   - BiSeNet `parsing_parsenet.pth` (81 MB)
-4. Smoke-tests one round-trip swap and prints the API endpoint.
+1. Creates `venv/`.
+2. Installs pinned Python dependencies from the project stack.
+3. Downloads the core model files into `models/`, including InSwapper, GFPGAN, InsightFace `buffalo_l`, and GFPGAN auxiliary parsing weights.
 
-For Pro-mode (3D-aware) you additionally need:
+For Pro mode, download the additional 3D/depth/segmentation checkpoints:
 
 ```bash
 ./venv/bin/python download_pro_models.py
 ```
 
-which fetches 3DDFA_V2 (37 MB), Depth Anything V2 small ONNX (99 MB), and SAM 2 base_plus
-(308 MB) into `models/pro/`.
+That fetches the Pro-mode assets under `models/pro/`:
 
----
+- 3DDFA_V2 ONNX and BFM support files
+- Depth Anything V2 small ONNX
+- SAM 2 base_plus checkpoint and config
 
-## Run
+Quick dependency check:
+
+```bash
+mkdir -p .cache/matplotlib .cache/fontconfig
+NO_ALBUMENTATIONS_UPDATE=1 \
+MPLCONFIGDIR=.cache/matplotlib \
+XDG_CACHE_HOME=.cache \
+./venv/bin/python - <<'PY'
+import cv2, insightface, torch, fastapi, skimage, mediapipe
+print("runtime imports ok")
+PY
+```
+
+## Usage
 
 ### Web UI
 
@@ -133,297 +249,234 @@ which fetches 3DDFA_V2 (37 MB), Depth Anything V2 small ONNX (99 MB), and SAM 2 
 ./run.sh
 ```
 
-This starts a FastAPI server at <http://localhost:8000>. The UI:
+Open [http://localhost:8000](http://localhost:8000).
 
-1. Upload a **base face image** (the identity you want to transplant).
-2. Upload a **target body image** (different person, any pose, full body OK).
-3. Pick a mode (AI Synthesis · Classical Compositing · Pro).
-4. Optional toggles: GFPGAN restoration, HD output, hair / glasses / accessory preservation, source skin-tone preservation.
-5. Click **Swap**.
+Workflow:
 
-The result image plus a JSON quality-dashboard block is returned in 2 – 60 s depending on mode.
+1. Upload a source portrait.
+2. Upload a target image.
+3. Choose `Classical Compositing`, `Pro`, or `AI Synthesis`.
+4. Adjust HD, enhancement, source detail, identity fidelity, and occluder preservation controls.
+5. Run the swap and inspect the result plus metrics.
+
+### HTTP API
+
+`POST /api/swap` accepts multipart form data.
+
+```bash
+curl -X POST http://localhost:8000/api/swap \
+  -F "source=@path/to/source.jpg" \
+  -F "target=@path/to/target.jpg" \
+  -F "mode=pro" \
+  -F "enhance=true" \
+  -F "hd=true" \
+  -F "swap_all=false" \
+  -F "preserve_hair=true" \
+  -F "preserve_source_tone=false"
+```
+
+Valid `mode` values:
+
+- `photoshop` - Classical Compositing
+- `ai` - AI Synthesis
+- `pro` - Pro Adaptive multi-pipeline router
+
+Important form fields:
+
+| Field | Type | Default | Description |
+|---|---:|---:|---|
+| `source` | file | required | Source identity portrait |
+| `target` | file | required | Target image |
+| `mode` | string | `photoshop` | `photoshop`, `ai`, or `pro` |
+| `enhance` | bool | `true` | Enable GFPGAN restoration |
+| `hd` | bool | `true` | Use HD processing path |
+| `swap_all` | bool | `false` | Swap all detected target faces |
+| `fidelity` | float | `0.75` | AI-mode identity/restoration balance |
+| `sharpen` | float | `0.35` | Final unsharp-mask amount |
+| `detail` | float | `0.9` | Classical source-detail graft strength |
+| `preserve_hair` | bool | `true` | Re-composite target hair, glasses, hats, and accessories |
+| `preserve_source_tone` | bool | `false` | Keep source skin tone instead of LAB matching |
+
+Response shape:
+
+```json
+{
+  "success": true,
+  "url": "/outputs/<uuid>.png",
+  "metrics": {
+    "arcface_cosine": 0.8175,
+    "arcface_verdict": "match",
+    "ssim": 0.3936,
+    "psnr": 8.17,
+    "delta_e_mean": 29.54,
+    "landmark_rmse_norm": null,
+    "elapsed_ms": 21016
+  },
+  "retried": false,
+  "pro": {
+    "chosen_route": "photoshop_strong",
+    "pose_diff_deg": 17.88,
+    "ghost": {
+      "arc_to_source": 0.8175,
+      "arc_to_target": 0.4342,
+      "ghost_score": -0.3833,
+      "routing": "ok"
+    }
+  }
+}
+```
 
 ### CLI
 
+The current CLI is a basic smoke-test wrapper around the default `FaceSwapper.swap()` path.
+
 ```bash
-./venv/bin/python swap_cli.py \
-  --source path/to/face.jpg \
-  --target path/to/body.jpg \
-  --output out.jpg \
-  --mode classical             # or: ai, pro
-  --hd --enhance --preserve-hair
+./venv/bin/python swap_cli.py path/to/source.jpg path/to/target.jpg outputs/cli_swap.png
 ```
+
+For mode selection and Pro metrics, use the Web UI, HTTP API, or Python API.
 
 ### Python API
 
 ```python
-from face_swap import FaceSwapper
 import cv2
+from face_swap import FaceSwapper
+from pro_swap import pro_swap
 
-fs = FaceSwapper()
-src = cv2.imread('face.jpg')
-tgt = cv2.imread('body.jpg')
+source = cv2.imread("path/to/source.jpg")
+target = cv2.imread("path/to/target.jpg")
 
-# AI / Classical mode
-result = fs.swap(src, tgt, mode='ai', hd=True, enhance=True)
-cv2.imwrite('out.jpg', result)
+swapper = FaceSwapper()
 
-# Pro mode (3D-aware adaptive)
-import pro_swap
-pr = pro_swap.pro_swap(fs, src, tgt, hd=True, enhance=True)
-cv2.imwrite('out.jpg', pr.image)
-print(pr.info_dict())   # quality vector + routing decision
+# Classical Compositing
+classic = swapper.swap(source, target, mode="photoshop", hd=True, enhance=True)
+cv2.imwrite("outputs/classical.png", classic)
+
+# AI Synthesis
+ai = swapper.swap(source, target, mode="ai", hd=True, enhance=True)
+cv2.imwrite("outputs/ai.png", ai)
+
+# Pro Adaptive
+pro = pro_swap(swapper, source, target, hd=True, enhance=True)
+cv2.imwrite("outputs/pro.png", pro.image)
+print(pro.info_dict())
 ```
 
----
+## Reproducing Benchmarks
 
-## How it works
+Aggregate benchmark artifacts used by the paper are stored in [paper/figures](paper/figures), including CSV and JSON outputs.
 
-```
-┌── shared front-end ──────────────────────┐
-│                                          │
-│  Source ──┐                              │
-│           ├─► InsightFace ─► MediaPipe   │
-│  Target ──┘    (buffalo_l)    BiSeNet    │
-│                                          │
-└─────────────────┬────────────────────────┘
-                  │
-              Mode router
-                  │
-        ┌─────────┼────────────┐
-        ▼         ▼            ▼
-  Classical    AI synth     Pro (3D-aware)
-                                │
-                       3DDFA_V2 · SAM 2 · Depth V2
-                                │
-                                ▼
-                        Ghost-score detector
-                                │
-                                ▼
-                       Result + metrics JSON
-                                │
-              (if g > 0 → retry stronger suppression)
+To run a new benchmark on your own portrait directory:
+
+```bash
+./venv/bin/python run_benchmark.py \
+  --portraits-root /path/to/portraits \
+  --max-pairs 200 \
+  --modes ai,classical \
+  --output-csv paper/figures/benchmark_custom.csv \
+  --output-json paper/figures/benchmark_custom.json
 ```
 
-Full algorithm description, the routing-decision pseudo-code, and the 14-step
-HardPoseReplaceMode are documented in the technical writeup (available on request).
+For Pro full coverage:
 
----
-
-## Benchmark results
-
-Evaluated on a real-photo cross-identity benchmark of **N = 200 pairs** drawn from a
-73-portrait pool (51 % male / 49 % female, age 22 – 71, pose 1.3° – 140.6°). All
-ArcFace cosines computed with InsightFace `buffalo_l/w600k_r50` — the same yardstick
-across every row.
-
-| Mode | α_s ↑ | g ↓ | LPIPS-Alex ↓ | LPIPS-VGG ↓ | Match | Time |
-|---|---|---|---|---|---|---|
-| raw inswapper          | 0.762 ± 0.198 | −0.671 ± 0.225 | 0.647 | 0.692 | **89.9 %** | **1.2 s** |
-| AI Synthesis           | 0.747 ± 0.197 | −0.637 ± 0.263 | 0.638 | 0.687 | 89.0 % | 2.3 s |
-| Classical Compositing  | 0.634 ± 0.185 | −0.512 ± 0.246 | **0.620** | **0.678** | 75.9 % | 4.3 s |
-| **Pro (auto-best)**    | **0.784 ± 0.154** | **−0.692 ± 0.219** | 0.69 | — | **92.5 %** | 25.5 s |
-| SimSwap-256 (external) | — | — | — | — | 0.5 % | 0.15 s |
-
-**Paired comparisons** on the same 200 pairs (Wilcoxon signed-rank):
-
-- Δα_s(**Pro − Classical**) = **+0.150 ± 0.031** (95 % CI), **p = 1.2 × 10⁻²¹**
-- Δα_s(**Pro − AI**)        = +0.037 ± 0.032 (95 % CI), p = 6 × 10⁻³
-- Δα_s(**Pro − raw inswapper**) = +0.022 ± 0.031 (95 % CI), p = 0.19 (n.s.)
-- Δα_s(**raw inswapper − SimSwap-256**) = **+0.486 ± 0.034**, p < 10⁻³¹
-
-**Pro rescues 10 / 10 hardest pairs** (those with worst Classical ghost score) with
-mean Δα_s = **+0.732 ± 0.072** (95 % CI). One example: pair 5 — Classical α_s = −0.006
-→ Pro α_s = 0.861.
-
-Raw per-pair benchmark data (CSV / JSON) is retained locally and is available on
-request for replication purposes.
-
----
-
-## API reference
-
-### `POST /api/swap`
-
-Multipart form fields:
-
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `source` | file | required | Source portrait image |
-| `target` | file | required | Target image |
-| `mode` | str | `classical` | One of `ai`, `classical`, `pro` |
-| `enhance` | bool | `true` | Run GFPGAN restoration |
-| `hd` | bool | `true` | 2× canvas |
-| `swap_all_targets` | bool | `false` | Swap every face in target, not just the largest |
-| `sharpen` | float | `0.35` | Unsharp-mask amount |
-| `detail` | float | `0.9` | Classical-mode high-band weight |
-| `preserve_hair` | bool | `true` | Re-composite target hair / glasses / accessories on top |
-| `preserve_source_tone` | bool | `false` | Skip LAB colour transfer (keep source skin tone) |
-
-Returns `{ "output_url": "/outputs/<sha>.png", "metrics": { ... } }` with the full
-quality-dashboard block (α_s, α_t, g, seam, landmark RMSE, ρ_d, LPIPS-Alex, LPIPS-VGG,
-routing decision, wall-clock).
-
-### `GET /healthz`
-
-Liveness probe.
-
-### `POST /api/reset`
-
-Forces a full FaceSwapper reload (clears MPS cache, rebuilds MediaPipe,
-garbage-collects). Called automatically by the memory watchdog at 24 GB RSS or 20 swaps.
-
----
-
-## Production stability features
-
-| Mechanism | Purpose |
-|---|---|
-| `asyncio.Lock` + single-thread executor | Serialises swap requests so two never race on MPS |
-| 240 s hard timeout | Returns HTTP 504 instead of stalling indefinitely |
-| Per-swap `torch.mps.empty_cache()` + GFPGAN buffer wipe + `gc.collect()` | Keeps RSS bounded |
-| MediaPipe rebuild every 5 swaps | Clears TF Lite XNNPACK delegate tensor arena |
-| Full FaceSwapper reload at 24 GB RSS or 20 swaps | Stress-tested to 10+ consecutive swaps without stall |
-
----
-
-## Project layout
-
+```bash
+./venv/bin/python run_pro_all200.py \
+  --portraits-root /path/to/portraits \
+  --source-bench paper/figures/benchmark_n200.csv \
+  --output-csv paper/figures/benchmark_pro_custom.csv \
+  --output-json paper/figures/benchmark_pro_custom.json
 ```
+
+If matplotlib warns about a non-writable cache, set a local cache directory:
+
+```bash
+mkdir -p .cache/matplotlib
+MPLCONFIGDIR=.cache/matplotlib XDG_CACHE_HOME=.cache ./venv/bin/python run_benchmark.py --help
+```
+
+## Project Layout
+
+```text
 .
-├── app.py                        # FastAPI HTTP entrypoint
-├── face_swap.py                  # FaceSwapper class (AI + Classical modes)
-├── pro_swap.py                   # Pro mode adaptive multi-pipeline orchestrator
-├── hard_pose_replace.py          # 14-step HardPoseReplaceMode
-├── ghost_detector.py             # 6-metric quality vector + routing decision
-├── blur_matcher.py               # Imaging-statistics matching (blur / noise / motion)
-├── pose_estimator.py             # solvePnP-based yaw/pitch/roll
-├── pro_warps.py                  # TPS / Delaunay / affine warps
-├── visible_surface.py            # 3DDFA_V2 z-buffer visible-surface mask
-├── region_blender.py             # BiSeNet region-aware compositing
-├── occluder_sam.py               # SAM 2 occluder mask refinement
-├── depth_occlusion.py            # Depth Anything V2 foreground occluder mask
-├── mixed_clone.py                # Adaptive Poisson / Laplacian pyramid clone
-├── target_suppressor.py          # Method A / B target-identity suppression
-├── quality_metrics.py            # ArcFace cosine + SSIM + ΔE + landmark RMSE
-├── swap_cli.py                   # CLI front-end
-├── run_benchmark_full.py         # Multi-pair benchmark runner
-├── run_baseline_simswap.py       # External SimSwap-256 baseline
-├── run_simswap_dualhead.py       # Dual-ArcFace-head fairness analysis
-├── run_pro_hardest.py            # Pro on hardest-N pairs
-├── run_pro_random30.py           # Pro on random-N pairs
-├── run_pro_all200.py             # Pro full-coverage on all 200 pairs
-├── static/                       # Web UI (HTML / JS / CSS)
-├── baselines/                    # External baseline checkpoints + wrappers
-│   ├── SimSwap/                  # Cloned upstream code
-│   ├── simswap_models/           # 220 MB .pth + 210 MB ArcFace JIT
-│   └── simswap_inference.py      # Minimal SimSwap inference wrapper
-├── models/                       # Cached ONNX / PyTorch weights (~3 GB after setup)
-├── outputs/                      # Per-swap result PNGs
-├── docs/                         # README assets
-│   ├── banner.png
+├── app.py                         # FastAPI server and static UI mount
+├── face_swap.py                   # Core Classical and AI pipelines
+├── pro_swap.py                    # Pro multi-candidate router
+├── hard_pose_replace.py           # 14-step HardPoseReplaceMode
+├── ghost_detector.py              # Ghost score, seam, double-edge, and routing metrics
+├── visible_surface.py             # 3DDFA_V2 z-buffer visible-surface mask
+├── region_blender.py              # BiSeNet region-aware compositing
+├── occluder_sam.py                # SAM 2 occluder refinement
+├── depth_occlusion.py             # Depth Anything V2 foreground occluder mask
+├── mixed_clone.py                 # Adaptive Poisson / Laplacian clone
+├── quality_metrics.py             # ArcFace, SSIM, PSNR, DeltaE, landmarks
+├── swap_cli.py                    # Basic CLI smoke-test wrapper
+├── run_benchmark.py               # Benchmark runner
+├── run_pro_all200.py              # Pro benchmark runner
+├── static/                        # Web UI
+├── docs/
+│   ├── banner.png                 # README banner
 │   ├── demo.mp4
-│   ├── demo_thumbnail.jpg
-│   └── ui_shots/                 # Web-UI screenshots
-└── setup.sh / run.sh
+│   ├── ui_shots/
+│   └── research/                  # README research figures and algorithm panels
+├── paper/
+│   ├── main.tex
+│   ├── figures/
+│   └── Ghost-Score-Driven Multi-Pipeline Face Swap with 3D-Aware Visible-Surface Compositing and Apple-Silicon-Native Runtime.pdf
+├── download_models.py
+├── download_pro_models.py
+├── requirements.txt
+├── setup.sh
+└── run.sh
 ```
-
----
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| `"No face detected"` | Use a clearer, more-frontal source; the face must be ≥ 64 px wide. |
-| `inswapper_128.onnx` download fails | `setup.sh` tries 3 mirrors. Otherwise download manually into `models/`. |
-| `basicsr` import error mentioning `functional_tensor` | Handled by runtime shim in `face_swap.py`. If you somehow hit it: `pip install torchvision==0.17.2`. |
-| Pro mode hangs on `hard_pose` route | Increase the 240 s timeout in `app.py`, or check Activity Monitor for an OOM. |
-| RSS climbs over time | Expected — the watchdog will reload at 24 GB. To trigger manually: `curl -X POST localhost:8000/api/reset`. |
-| MPS error `aten::upsample_bicubic2d.out not implemented` | SAM 2 is forced to CPU because of this; set `PYTORCH_ENABLE_MPS_FALLBACK=1` as a backup. |
-
----
-
-## Citation
-
-If you build on this work please cite:
-
-```bibtex
-@misc{dey2026ghostscore,
-  author = {Dey, Karan Chandra},
-  title  = {Ghost-Score-Driven Multi-Pipeline Face Swap with 3D-Aware
-            Visible-Surface Compositing and Apple-Silicon-Native Runtime},
-  year   = {2026},
-  howpublished = {Technical report},
-  url    = {https://github.com/Kayariyan28/Ghost-Score-Face-Swap}
-}
-```
-
-A full technical writeup (12 pages, IEEE format, with the routing-decision
-pseudocode, the 14-step HardPoseReplaceMode, the N=200 benchmark methodology,
-ethics statement, and reproducibility appendix) is available **on request** from
-the author — see contact details below.
-
----
+| `No face detected` | Use a clearer source face; the source face should be frontal enough and at least roughly 64 px wide. |
+| `Missing model: models/inswapper_128.onnx` | Run `./venv/bin/python download_models.py`. |
+| Pro mode cannot load SAM 2 or Depth Anything | Run `./venv/bin/python download_pro_models.py`; Pro falls back when optional assets are unavailable. |
+| Server stalls on a large request | The app has a 240 s timeout. Try smaller input size, restart `./run.sh`, or use AI mode. |
+| Memory grows over time | The app clears MPS/GFPGAN buffers per swap and rebuilds the pipeline after memory or swap-count thresholds. Manual reset: `curl -X POST http://localhost:8000/api/reset`. |
+| Matplotlib cache warning in benchmark scripts | Run with `MPLCONFIGDIR=.cache/matplotlib` after creating that directory. |
+| `basicsr` / `functional_tensor` import issue | The runtime shims this in `face_swap.py`; keep `torch==2.2.2` and `torchvision==0.17.2`. |
 
 ## Ethics
 
-Face swapping is a deepfake-adjacent technology. We acknowledge this explicitly and have
-designed the system to favour legitimate use cases (visual-effects pre-visualisation,
-consented portrait re-targeting, on-device privacy-preserving anonymisation for
-journalism and medical imagery) while raising the cost of misuse:
+Face swapping is deepfake-adjacent technology. Use this project only with consented inputs and for legitimate purposes such as research, education, visual-effects prototyping, or privacy-preserving anonymisation.
 
-- **On-device only.** No cloud component, no telemetry, no anonymous access surface.
-- **No public weight release.** Model checkpoints are downloaded from their original
-  distributors at install time; we do not host or mirror weights.
-- **Detector-friendly outputs.** No anti-forensic post-processing (no noise injection,
-  no frequency-domain laundering). Results retain the residual ArcFace and double-edge
-  signatures FaceForensics++-class detectors are trained on.
-- **Provenance hint.** The shipped tool can emit a C2PA-compatible JSON sidecar
-  describing the generator, model versions, and the quality-dashboard block.
+This repository intentionally avoids:
 
-**Intended use:** personal creative work, education, research on synthetic-image
-detection.
-**Out of scope:** impersonation, harassment, non-consensual intimate imagery, election
-influence operations, or any deployment where the subject has not given informed consent.
+- hosted public inference;
+- telemetry or anonymous cloud access;
+- anti-forensic post-processing;
+- redistribution of third-party model checkpoints.
 
-By using this software you agree to limit usage to consented inputs only.
+Out-of-scope use includes impersonation, harassment, non-consensual intimate imagery, election manipulation, or any workflow where the subject has not given informed consent.
 
----
+## Licenses And Third-Party Terms
 
-## Licences
-
-| Component | Licence |
+| Component | License / terms |
 |---|---|
-| This repository's code | MIT |
-| inswapper_128 | InsightFace project terms (non-commercial research) |
+| This repository code | MIT, see [LICENSE](LICENSE) |
+| InSwapper / InsightFace assets | InsightFace project terms, commonly non-commercial research |
 | GFPGAN | Apache 2.0 |
-| BiSeNet `parsing_parsenet` | MIT |
-| 3DDFA_V2 | MIT (BFM data has separate non-commercial terms) |
+| BiSeNet / face parsing weights | Upstream model terms |
+| 3DDFA_V2 | MIT code, BFM-derived data has separate restrictions |
 | SAM 2 | Apache 2.0 |
 | Depth Anything V2 | Apache 2.0 |
-| SimSwap (baseline-only) | Non-commercial research |
+| SimSwap baseline | Non-commercial research |
 
----
+Check upstream licenses before commercial use.
 
 ## Contact
 
-For the full technical writeup, raw benchmark data, or collaboration enquiries:
-
-- **Karan Chandra Dey** — Founder & AI Consultant, K28 Design Lab
-- 🌐 [k28art.space](https://k28art.space)
-- 💼 [linkedin.com/in/karan-chandra-dey-23392b1b9](https://www.linkedin.com/in/karan-chandra-dey-23392b1b9)
-
----
-
-## Acknowledgements
-
-This work builds on the InsightFace project, GFPGAN, MediaPipe, 3DDFA_V2, SAM 2, Depth
-Anything V2, and the broader open-source face-recognition / face-restoration community.
-Banner hero-pair images sourced from [Unsplash](https://unsplash.com) under the Unsplash
-License.
+- Karan Chandra Dey - Founder and AI Consultant, K28 Design Lab
+- Website: [k28art.space](https://k28art.space)
+- LinkedIn: [linkedin.com/in/karan-chandra-dey-23392b1b9](https://www.linkedin.com/in/karan-chandra-dey-23392b1b9)
 
 ---
 
 <p align="center">
-  <sub>Built and benchmarked on an Apple M4 Max. Runs entirely on-device — no cloud, no telemetry, no third-party API.</sub>
+  <sub>Built and benchmarked as a local Apple-Silicon research runtime. No cloud inference, no telemetry.</sub>
 </p>
